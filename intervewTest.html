@@ -1,0 +1,183 @@
+<DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css?family=Asar" rel="stylesheet">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script>
+	
+	$(document).ready(function(){
+
+		var $container = $('#container');
+		$('head').append('<link rel="stylesheet" type="text/css" href="intervewTest.css">');
+		$container.append('<ul id="filter"><li class="filter" id="items">All</li><li class="filter" id="manuals">Manual</li><li class="filter" id="twitters">Twitter</li><li class="filter" id="instagrams">Instagram</li></ul>');
+
+		$container.append('<div id="filter_mobile"></div>');
+		$('#filter_mobile').append('<button class="dropbtn">Dropdown</button>');
+		$('#filter_mobile').append('<ul class="dropdown"><li class="filter" id="items">All</li><li class="filter" id="manuals">Manual</li><li class="filter" id="twitters">Twitter</li><li class="filter" id="instagrams">Instagram</li></ul>');
+
+		$(".dropdown").hide();
+
+		$.ajax({//load json file
+			type:'GET',
+			url:'posts.json',
+			dataType:'json',
+			error:function(items){
+				$container.append('<li>wrong</li>');
+			},
+			success: function(items){ 
+				$.each(items,function(key,item){
+					//put each item into ul with their item number
+					$container.append('<ul id="items_table"></ul>');
+					for(var i =0;i<item.length;i++){
+						if(item[i].service_slug ==='manual'){
+							$('#items_table').append('<li class="items manuals"></li')
+							$('.items').eq(i).append('<div class="items_content"></div>')
+							$('.items_content').eq(i).append('<img class="manual_img" src="'+item[i].item_data.image_url+'">');
+							$('.items_content').eq(i).append('<p class="manual_te  xt" id="manualText'+i+'">'+item[i].item_data.text+'</p><p class="loadmore" text-id="'+i+'" >more</p><p class="hidden" text-id="'+i+'" >hidden</p>');
+							$('.items_content').eq(i).append('<a href="'+item[i].item_data.link+'" class="manual_link">'+item[i].item_data.link_text+'</p>');
+						}
+						else if(item[i].service_slug === 'twitter' ){
+							$('#items_table').append('<li class="items twitters"></li')
+							$('.items').eq(i).append('<div class="items_content"></div>')
+							$('.items_content').eq(i).append('<p class="twitter_username">'+item[i].item_data.user.username+'</p>');
+							//make link to twitter page which words begin with @ 
+							var tweet = '';
+							var str = item[i].item_data.tweet;
+							var words = str.split(" ");
+
+							for (var x = 0; x < words.length; x++) {
+								var string;
+								if(words[x].charAt(0)==='@'){
+									string = '<a class="tweet_link" href="https://twitter.com/'+ words[x].slice(1,words[x].length)+'">'+words[x]+'</a> ';
+								}
+								else{
+									string = words[x]+' ';
+								}
+								tweet += string;
+							}
+							
+							$('.items_content').eq(i).append('<p class="twitter_tweet">'+tweet+'</p>');
+						}
+						else{
+							$('#items_table').append('<li class="items instagrams"></li')
+							$('.items').eq(i).append('<div class="items_content"></div>')
+							$('.items_content').eq(i).append('<img class="instagram_img" src="'+item[i].item_data.image_url+'">');
+							$('.items_content').eq(i).append('<p class="instagram_username">'+item[i].item_data.user.username+'</p>');
+							//make link to instagram page which words begin with #
+							var caption = '';
+							var str = item[i].item_data.caption;
+							var words = str.split(" ");
+
+							for (var x = 0; x < words.length; x++) {
+								var string;
+								if(words[x].charAt(0) ==='#'){
+									string = '<a class="caption_link" href="https://instagram.com/'+ words[x].slice(1,words[x].length)+'">'+words[x]+'</a> ';
+								}
+								else{
+									string = words[x]+' ';
+								}
+								caption += string;
+							}
+							
+							$('.items_content').eq(i).append('<p class="instagram_caption">'+caption+'</p>');
+						}
+
+					}
+				});
+				//filter for mobile use
+				$container.append('<div class="select"><div class="prev">Prev</div><div class="next">Next</div></div>');
+				$(".hidden").hide();
+				//page system
+				var page;
+				var maxPage;
+				var lastPage;
+				var className = "items";
+
+				
+
+				$('.filter').on('click', function() {
+					$(".items").hide();
+					className = $(this).attr('id');
+					var n = $('.'+className).length;
+					maxPage = n/6;
+					maxPage=parseInt(maxPage);
+					lastPage =n%6;
+					lastPage=parseInt(lastPage)
+					if(n<6){
+						$("."+className).slice(0,n).addClass(className+'_page1').show();
+					}
+					else{
+						$("."+className).slice(0,6).addClass(className+'_page1').show();
+						for(var z = 2; z<=maxPage;z++){
+							var begin = (z-1)*6;
+							var end = z*6;
+							$(".items").slice(begin,end).addClass(className+'_page'+z).hide();
+						}
+					}
+					
+					if(lastPage!=0){
+						maxPage=maxPage+1;
+						$(".items").slice(n-lastPage,n).addClass(className+'_page'+maxPage).hide();
+					}
+					page = 1;
+				})
+
+				//filter page system
+				$('#items').trigger("click");
+
+				$('.next').on('click', function() {
+					
+  					if (page < maxPage) {
+   						$(".items:visible").hide();
+    					$('.'+className+'_page' + ++page).show();
+  					}
+				})
+				$('.prev').on('click', function() {
+  					if (page > 1) {
+    					$(".items:visible").hide();
+    					$('.'+className+'_page' + --page).show();
+ 					}
+				})
+
+				var open=false;
+				$('.dropbtn').on('click',function(){
+					if(open){
+						$(".dropdown").hide();
+						open=false;
+					}
+					else{
+						$(".dropdown").show();
+						open=true;
+					}
+				})
+				//load more text
+				$('.loadmore').on('click',function(){
+					var tid = $(this).attr('text-id');
+					$('#manualText'+tid).css('height','auto');
+					$('.loadmore').eq(tid).hide();
+					$('.hidden').eq(tid).show();
+				})
+
+				$('.hidden').on('click',function(){
+					var tid = $(this).attr('text-id');
+					$('#manualText'+tid).css('height','6em');
+					$('.hidden').eq(tid).hide();
+					$('.loadmore').eq(tid).show();
+					
+				})
+
+			}
+		});
+		
+
+
+});
+
+
+
+</script>
+</head>
+<body>
+	<div id="container"></div>
+</body>
+</html>
